@@ -117,7 +117,7 @@ public class DownloadImageService extends IntentService {
     public static String getImageURL(Bundle data) {
         // Extract the path to the image file from the Bundle, which
         // should be stored using the IMAGE_URL key.
-        return data.getString(IMAGE_URL);
+        return data.getParcelable(IMAGE_URL).toString();
     }
 
     /**
