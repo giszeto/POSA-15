@@ -1,11 +1,9 @@
 package vandy.mooc.activities;
 
-import vandy.mooc.R;
 import vandy.mooc.operations.AcronymOps;
 import vandy.mooc.operations.AcronymOpsImpl;
-import vandy.mooc.utils.RetainedFragmentManager;
+import android.content.res.Configuration;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 
 /**
@@ -13,20 +11,9 @@ import android.view.View;
  * various implementations of AcronymServiceSync and
  * AcronymServiceAsync and view via the results.  Extends
  * LifecycleLoggingActivity so its lifecycle hook methods are logged
- * automatically.  This implementation uses the
- * RetainedFragmentManager class to handle runtime reconfigurations
- * robustly.  As a result, MainActivity plays the role of the
- * "Caretaker" in the Memento pattern.
+ * automatically.
  */
 public class MainActivity extends LifecycleLoggingActivity {
-    /**
-     * Used to retain the AcronymOps state between runtime configuration
-     * changes.
-     */
-    protected final RetainedFragmentManager mRetainedFragmentManager = 
-        new RetainedFragmentManager(this.getFragmentManager(),
-                                    TAG);
-
     /**
      * Provides acronym-related operations.
      */
@@ -45,84 +32,35 @@ public class MainActivity extends LifecycleLoggingActivity {
         // initialization/implementation.
         super.onCreate(savedInstanceState);
 
-        // Handle any configuration change.
-        handleConfigurationChanges();
-    }
-
-    /**
-     * Hook method called after onCreate() or after onRestart() (when
-     * the activity is being restarted from stopped state).  
-     */	
-    @Override
-    protected void onStart(){
-        // Always call super class for necessary
-        // initialization/implementation.
-        super.onStart();
+        // Create the AcronymOps object one time.
+        mAcronymOps = new AcronymOpsImpl(this);
 
         // Initiate the service binding protocol.
         mAcronymOps.bindService();
     }
 
     /**
-     * Hook method called by Android when this Activity becomes
-     * invisible.
+     * Hook method called by Android when this Activity is
+     * destroyed.
      */
     @Override
-    protected void onStop() {
+    protected void onDestroy() {
         // Unbind from the Service.
         mAcronymOps.unbindService();
 
-        // Always call super class for necessary operations when
-        // stopping.
-        super.onStop();
+        // Always call super class for necessary operations when an
+        // Activity is destroyed.
+        super.onDestroy();
     }
 
     /**
-     * Handle hardware reconfigurations, such as rotating the display.
+     * Hook method invoked when the screen orientation changes.
      */
-    protected void handleConfigurationChanges() {
-        // If this method returns true then this is the first time the
-        // Activity has been created.
-        if (mRetainedFragmentManager.firstTimeIn()) {
-            Log.d(TAG,
-                  "First time onCreate() call");
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
 
-            // Create the AcronymOps object one time.
-            mAcronymOps = new AcronymOpsImpl(this);
-
-            // Store the AcronymOps into the RetainedFragmentManager.
-            mRetainedFragmentManager.put("ACRONYM_OPS_STATE",
-                                         mAcronymOps);
-            
-        } else {
-            // The RetainedFragmentManager was previously initialized,
-            // which means that a runtime configuration change
-            // occured.
-
-            Log.d(TAG,
-                  "Second or subsequent onCreate() call");
-
-            // Obtain the AcronymOps object from the
-            // RetainedFragmentManager.
-            mAcronymOps = 
-                mRetainedFragmentManager.get("ACRONYM_OPS_STATE");
-
-            // This check shouldn't be necessary under normal
-            // circumtances, but it's better to lose state than to
-            // crash!
-            if (mAcronymOps == null) {
-                // Create the AcronymOps object one time.
-                mAcronymOps = new AcronymOpsImpl(this);
-
-                // Store the AcronymOps into the
-                // RetainedFragmentManager.
-                mRetainedFragmentManager.put("ACRONYM_OPS_STATE",
-                                             mAcronymOps);
-            } else 
-                // Inform it that the runtime configuration change has
-                // completed.
-                mAcronymOps.onConfigurationChange(this);
-        }
+        mAcronymOps.onConfigurationChanged(newConfig);
     }
 
     /*
